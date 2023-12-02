@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     "django_multidatabase_queryset",
+    "core",
 ]
 
 MIDDLEWARE = [
@@ -78,7 +79,11 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    },
+    "db_cold": {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db_cold.sqlite3',
+    },
 }
 
 
@@ -122,3 +127,72 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+LOG_DIR = BASE_DIR / 'log'
+LOG_DIR.mkdir(exist_ok=True)
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': ('[%(levelname)5s] %(asctime)s %(pathname)s '
+                       '%(funcName)s (line: %(lineno)d)'
+                       '    %(message)s'),
+        },
+        'simple': {
+            'format': '[%(levelname)s] %(message)s ',
+        },
+    },
+    'handlers': {
+        'error_file': {
+            'level': "ERROR",
+            'class': 'logging.FileHandler',
+            'filename': LOG_DIR / 'error.log',
+            'formatter': 'verbose',
+        },
+        'warning_file': {
+            'level': "WARNING",
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': LOG_DIR / 'warning.log',
+            'maxBytes': 1024 * 1024 * 10,
+            'backupCount': 20,
+            'formatter': 'verbose',
+        },
+        'info_file': {
+            'level': "INFO",
+            'class': 'logging.handlers.RotatingFileHandler',
+            'maxBytes': 1024 * 1024 * 10,
+            'backupCount': 20,
+            'filename': LOG_DIR / 'info.log',
+            'formatter': 'verbose',
+        },
+        'debug_file': {
+            'level': "DEBUG",
+            'class': 'logging.handlers.RotatingFileHandler',
+            'maxBytes': 1024 * 1024 * 10,
+            'backupCount': 20,
+            'filename': LOG_DIR / 'debug.log',
+            'formatter': 'verbose',
+        },
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'default': {
+            'handlers': ['debug_file', 'info_file',
+                         'warning_file', 'error_file', 'console'],
+            'level': "INFO",
+        },
+        'django': {
+            'handlers': ['debug_file', 'info_file',
+                         'warning_file', 'error_file', 'console'],
+            'level': "INFO",
+        },
+        'testapp': {
+            'handlers': ['debug_file', 'info_file',
+                         'warning_file', 'error_file', 'console'],
+            'level': "INFO",
+        },
+    },
+}
