@@ -49,6 +49,7 @@ class Test(TestCase):
         self.assertEqual(data[1].type, "type2")
         self.assertEqual(data[2].type, "type3")
         self.assertEqual(data[3].type, "type4")
+        self.assertEqual(order_qs.count(), 4)
 
     def test_using(self):
         hot_data = UserAction(type="hot")
