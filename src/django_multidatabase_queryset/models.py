@@ -30,8 +30,9 @@ class CompatableObject:
 
 class MultiQueryset:
 
-    def __init__(self, order_fields=None, *args, **kwargs):
+    def __init__(self, model, order_fields=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.model = model
         self.query_dict = OrderedDict()
         self.order_fields = order_fields
 
@@ -81,7 +82,7 @@ class MultiQueryset:
         return True
 
     def filter(self, *args, **kwargs):
-        result = MultiQueryset()
+        result = MultiQueryset(model=self.model)
         for db_name, query in self.query_dict.items():
             result.query_dict[db_name] = query.filter(*args, **kwargs)
         return result
@@ -94,16 +95,34 @@ class MultiQueryset:
 
     def order_by(self, *field_names):
         self.order_fields = field_names
-        result = MultiQueryset(order_fields=field_names)
+        result = MultiQueryset(model=self.model,
+                               order_fields=field_names)
         for db_name, query in self.query_dict.items():
             result.query_dict[db_name] = query.order_by(*field_names)
         return result
+
+    def using(self, using: str):
+        return self.query_dict[using]
+
+    def get(self, *args, **kwargs):
+        results = []
+        for db_name, query in self.query_dict.items():
+            try:
+                instance = query.get(*args, **kwargs)
+            except self.model.DoesNotExist:
+                continue
+            except self.model.MultipleObjectsReturned:
+                raise
+            results.append(instance)
+        if len(results) == 1:
+            return results[0]
+        raise self.model.MultipleObjectsReturned
 
 
 class MultiDataBaseManager(BaseManager.from_queryset(QuerySet)):
 
     def get_queryset(self) -> List[QuerySet]:
-        queryset = MultiQueryset()
+        queryset = MultiQueryset(model=self.model)
         for db_name in self.model.DATABASES:
             queryset.query_dict[db_name] = super().get_queryset().using(db_name)
         return queryset

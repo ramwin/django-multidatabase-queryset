@@ -1,3 +1,4 @@
+# pylint: disable=missing-class-docstring, missing-function-docstring
 import logging
 
 from django.test import TestCase
@@ -48,3 +49,25 @@ class Test(TestCase):
         self.assertEqual(data[1].type, "type2")
         self.assertEqual(data[2].type, "type3")
         self.assertEqual(data[3].type, "type4")
+
+    def test_using(self):
+        hot_data = UserAction(type="hot")
+        hot_data.save(using="default")
+        cold_data = UserAction(type="cold")
+        cold_data.save(using="db_cold")
+        self.assertEqual(
+            UserAction.objects.all().using("default").count(), 1)
+        self.assertEqual(
+            UserAction.objects.all().using("db_cold").count(), 1)
+        self.assertEqual(
+            UserAction.objects.using("db_cold").count(), 1)
+        self.assertEqual(
+            UserAction.objects.filter(type="hot").get(),
+            UserAction.objects.get(type="hot"),
+        )
+        hot_data.delete()
+        hot_data.save(using="db_cold")
+        self.assertEqual(
+            UserAction.objects.filter(type="hot").get(),
+            UserAction.objects.get(type="hot"),
+        )
