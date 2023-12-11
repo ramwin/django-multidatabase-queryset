@@ -128,6 +128,12 @@ class MultiQueryset:
             return results[0]
         raise self.model.MultipleObjectsReturned
 
+    def exists(self):
+        for query in self.query_dict.values():
+            if query.exists():
+                return True
+        return False
+
 
 class MultiDataBaseManager(BaseManager.from_queryset(QuerySet)):
     # pylint: disable=too-few-public-methods
