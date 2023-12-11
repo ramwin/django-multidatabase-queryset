@@ -60,7 +60,7 @@ class Test(TestCase):
         self.assertEquals(list(order_qs2), [])
         data1 = UserAction(id=1, type="non exist")
         data1.save(using="default")
-        breakpoint()
+        order_qs2 = order_qs2.filter()
         self.assertEquals(list(order_qs2), [data1])
 
     def test_using(self):
