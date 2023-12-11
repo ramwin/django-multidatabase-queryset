@@ -1,3 +1,8 @@
+"""
+queryset support multi database
+"""
+
+
 import heapq
 
 from collections import OrderedDict
@@ -11,6 +16,9 @@ from django.db.models.query import QuerySet
 
 @dataclass
 class CompatableObject:
+    """
+    use order_by fields to compare two model instance
+    """
     db_name: str
     order_by: List[str]
     instance: models.Model
@@ -22,19 +30,21 @@ class CompatableObject:
             if first_value is None:
                 if second_value is None:
                     continue
-                else:
-                    return True
+                return True
             return first_value < second_value
         return self.instance.pk < other.instance.pk
 
 
 class MultiQueryset:
+    """
+    queryset that support multi database, all the interface should work like a normal queryset
+    """
 
-    def __init__(self, model, order_fields=None, *args, **kwargs):
+    def __init__(self, model, *args, order_fields=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.model = model
         self.query_dict = OrderedDict()
-        self.order_fields = order_fields
+        self.order_fields = order_fields or []
 
     def __iter__(self):
         if not self.order_fields:
@@ -48,13 +58,17 @@ class MultiQueryset:
             for db_name, query in self.query_dict.items()
         }
         for db_name, iter_obj in queryset_iterations.items():
-            result_candidates.append(
-                CompatableObject(
-                    db_name=db_name,
-                    order_by=self.order_fields,
-                    instance=next(iter_obj),
+            try:
+                instance = next(iter_obj)
+                result_candidates.append(
+                    CompatableObject(
+                        db_name=db_name,
+                        order_by=self.order_fields,
+                        instance=instance,
+                    )
                 )
-            )
+            except StopIteration:
+                continue
         heapq.heapify(result_candidates)
         while result_candidates:
             result: CompatableObject
@@ -70,30 +84,25 @@ class MultiQueryset:
                     )
                 )
             except StopIteration:
-                pass
+                queryset_iterations.pop(result.db_name)
             yield result.instance
 
-    def compare_function(self, a, b):
-        for field in self.order_by:
-            if getattr(a, field) > getattr(b, field):
-                return True
-            if getattr(a, field) < getattr(b, field):
-                return False
-        return True
-
     def filter(self, *args, **kwargs):
+        """work same as queryset.filter"""
         result = MultiQueryset(model=self.model)
         for db_name, query in self.query_dict.items():
             result.query_dict[db_name] = query.filter(*args, **kwargs)
         return result
 
     def count(self, *args, **kwargs):
+        """work same as queryset.count"""
         result = 0
         for query in self.query_dict.values():
             result += query.count()
         return result
 
     def order_by(self, *field_names):
+        """work same as queryset.order_by"""
         self.order_fields = field_names
         result = MultiQueryset(model=self.model,
                                order_fields=field_names)
@@ -102,17 +111,18 @@ class MultiQueryset:
         return result
 
     def using(self, using: str):
+        """work same as queryset.using"""
         return self.query_dict[using]
 
     def get(self, *args, **kwargs):
+        """work same as queryset.get"""
         results = []
-        for db_name, query in self.query_dict.items():
+        for query in self.query_dict.values():
             try:
                 instance = query.get(*args, **kwargs)
             except self.model.DoesNotExist:
                 continue
-            except self.model.MultipleObjectsReturned:
-                raise
+            # if MultipleObjectsReturned raised, just raise it
             results.append(instance)
         if len(results) == 1:
             return results[0]
@@ -120,8 +130,15 @@ class MultiQueryset:
 
 
 class MultiDataBaseManager(BaseManager.from_queryset(QuerySet)):
+    # pylint: disable=too-few-public-methods
+    """
+    This Manager will iter all the DATABASES of model
+    """
 
-    def get_queryset(self) -> List[QuerySet]:
+    def get_queryset(self) -> MultiQueryset:
+        """
+        iter all the databases and return a MultiQueryset
+        """
         queryset = MultiQueryset(model=self.model)
         for db_name in self.model.DATABASES:
             queryset.query_dict[db_name] = super().get_queryset().using(db_name)
@@ -129,6 +146,9 @@ class MultiDataBaseManager(BaseManager.from_queryset(QuerySet)):
 
 
 class MultiDataBaseModel(models.Model):
+    """
+    MultiDataBaseModel can be used when you have multidatabase and want to use these database as one
+    """
     DATABASES = ["default"]
     objects = MultiDataBaseManager()
 

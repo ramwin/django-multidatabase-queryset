@@ -51,6 +51,18 @@ class Test(TestCase):
         self.assertEqual(data[3].type, "type4")
         self.assertEqual(order_qs.count(), 4)
 
+    def test_order_again(self):
+        """
+        test if the queryset can update
+        """
+        order_qs2 = UserAction.objects.order_by(
+            "type", "pk").filter(type="non exist")
+        self.assertEquals(list(order_qs2), [])
+        data1 = UserAction(id=1, type="non exist")
+        data1.save(using="default")
+        breakpoint()
+        self.assertEquals(list(order_qs2), [data1])
+
     def test_using(self):
         hot_data = UserAction(type="hot")
         hot_data.save(using="default")
