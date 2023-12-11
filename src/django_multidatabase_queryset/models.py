@@ -134,6 +134,10 @@ class MultiQueryset:
                 return True
         return False
 
+    def first(self):
+        for i in self:
+            return i
+
 
 class MultiDataBaseManager(BaseManager.from_queryset(QuerySet)):
     # pylint: disable=too-few-public-methods

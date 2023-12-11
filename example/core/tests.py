@@ -62,6 +62,8 @@ class Test(TestCase):
         data1.save(using="default")
         order_qs2 = order_qs2.filter()
         self.assertEquals(list(order_qs2), [data1])
+        self.assertEquals(order_qs2.first(), data1)
+        self.assertEquals(order_qs2.exists(), True)
 
     def test_using(self):
         hot_data = UserAction(type="hot")
