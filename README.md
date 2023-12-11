@@ -55,3 +55,6 @@ pip install django-multidatabase-queryset
 ## License
 
 `django-multidatabase-queryset` is distributed under the terms of the [MIT](https://spdx.org/licenses/MIT.html) license.
+
+## TODO
+* [ ] multi queryset slice
