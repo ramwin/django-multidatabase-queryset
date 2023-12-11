@@ -138,6 +138,12 @@ class MultiQueryset:
         for i in self:
             return i
 
+    def create(self, *args, **kwargs):
+        if "default" in self.query_dict:
+            return self.query_dict["default"].create(*args, **kwargs)
+        else:
+            return self.query_dict.values()[0].create(*args, **kwargs)
+
 
 class MultiDataBaseManager(BaseManager.from_queryset(QuerySet)):
     # pylint: disable=too-few-public-methods
