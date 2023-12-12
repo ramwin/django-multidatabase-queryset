@@ -50,6 +50,10 @@ class Test(TestCase):
         self.assertEqual(data[2].type, "type3")
         self.assertEqual(data[3].type, "type4")
         self.assertEqual(order_qs.count(), 4)
+        # breakpoint()
+        exclude_qs = order_qs.exclude(id__gte=2)
+        self.assertEqual(list(exclude_qs),
+                         [data1])
 
     def test_order_again(self):
         """

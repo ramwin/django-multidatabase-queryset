@@ -38,9 +38,15 @@ class CompatableObject:
 class MultiQueryset:
     """
     queryset that support multi database, all the interface should work like a normal queryset
+
+    work same as
+        django.db.models.query.QuerySet
     """
 
-    def __init__(self, model, *args, order_fields=None, **kwargs):
+    def __init__(self, model,
+                 *args,
+                 order_fields=None,
+                 **kwargs):
         super().__init__(*args, **kwargs)
         self.model = model
         self.query_dict = OrderedDict()
@@ -87,12 +93,31 @@ class MultiQueryset:
                 queryset_iterations.pop(result.db_name)
             yield result.instance
 
+    def _clone(self):
+        c = self.__class__(
+                model=self.model,
+                order_fields=self.order_fields,
+        )
+        c.query_dict = self.query_dict.copy()
+        return c
+
+    def run_function_for_all_query(self, function, *args, **kwargs):
+        clone = self._clone()
+        for db_name, query in clone.query_dict.items():
+            query = getattr(query, function)(*args, **kwargs)
+            clone.query_dict[db_name] = query
+        return clone
+
+    def exclude(self, *args, **kwargs):
+        return self.run_function_for_all_query(
+                "exclude", *args, **kwargs
+        )
+
     def filter(self, *args, **kwargs):
         """work same as queryset.filter"""
-        result = MultiQueryset(model=self.model)
-        for db_name, query in self.query_dict.items():
-            result.query_dict[db_name] = query.filter(*args, **kwargs)
-        return result
+        return self.run_function_for_all_query(
+                "filter", *args, **kwargs
+        )
 
     def count(self, *args, **kwargs):
         """work same as queryset.count"""
@@ -104,11 +129,11 @@ class MultiQueryset:
     def order_by(self, *field_names):
         """work same as queryset.order_by"""
         self.order_fields = field_names
-        result = MultiQueryset(model=self.model,
-                               order_fields=field_names)
-        for db_name, query in self.query_dict.items():
-            result.query_dict[db_name] = query.order_by(*field_names)
-        return result
+        new_query = self.run_function_for_all_query(
+                "order_by", *field_names
+        )
+        new_query.order_fields = field_names
+        return new_query
 
     def using(self, using: str):
         """work same as queryset.using"""
