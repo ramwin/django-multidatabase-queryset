@@ -25,8 +25,12 @@ class CompatableObject:
 
     def __lt__(self, other):
         for field in self.order_by:
-            first_value = getattr(self.instance, field)
-            second_value = getattr(other.instance, field)
+            if field.startswith("-"):
+                first_value = getattr(other.instance, field[1:])
+                second_value = getattr(self.instance, field[1:])
+            else:
+                first_value = getattr(self.instance, field)
+                second_value = getattr(other.instance, field)
             if first_value is None:
                 if second_value is None:
                     continue
