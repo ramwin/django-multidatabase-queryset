@@ -17,11 +17,11 @@ class Test(TestCase):
         hot_data.save(using="default")
         cold_data = UserAction(type="cold")
         cold_data.save(using="db_cold")
-        data = list(UserAction.objects.all())
         self.assertEqual(
                 UserAction.objects.count(),
                 2,
         )
+        data = list(UserAction.objects.all())
         self.assertEqual(
                 len(data), 
                 2,

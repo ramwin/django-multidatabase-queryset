@@ -117,6 +117,11 @@ class MultiQueryset:
                 "exclude", *args, **kwargs
         )
 
+    def all(self, *args, **kwargs):
+        return self.run_function_for_all_query(
+                "all", *args, **kwargs
+        )
+
     def filter(self, *args, **kwargs):
         """work same as queryset.filter"""
         return self.run_function_for_all_query(
@@ -127,7 +132,7 @@ class MultiQueryset:
         """work same as queryset.count"""
         result = 0
         for query in self.query_dict.values():
-            result += query.count()
+            result += query.count(*args, **kwargs)
         return result
 
     def order_by(self, *field_names):
@@ -139,9 +144,9 @@ class MultiQueryset:
         new_query.order_fields = field_names
         return new_query
 
-    def using(self, using: str):
+    def using(self, alias: str):
         """work same as queryset.using"""
-        return self.query_dict[using]
+        return self.query_dict[alias]
 
     def get(self, *args, **kwargs):
         """work same as queryset.get"""
@@ -170,8 +175,7 @@ class MultiQueryset:
     def create(self, *args, **kwargs):
         if "default" in self.query_dict:
             return self.query_dict["default"].create(*args, **kwargs)
-        else:
-            return self.query_dict.values()[0].create(*args, **kwargs)
+        return self.query_dict.values()[0].create(*args, **kwargs)
 
 
 class MultiDataBaseManager(BaseManager.from_queryset(QuerySet)):
