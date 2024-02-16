@@ -167,6 +167,22 @@ class MultiQueryset:
         for i in self:
             return i
 
+    def last(self):
+        result_candidates = []
+        for db_name, queryset in self.query_dict.items():
+            last_item = queryset.last()
+            if last_item is None:
+                continue
+            result_candidates.append(CompatableObject(
+                db_name=db_name,
+                order_by=self.order_fields,
+                instance=last_item
+            ))
+        if not result_candidates:
+            return None
+        result_candidates.sort(reverse=True)
+        return result_candidates[0].instance
+
     def create(self, *args, **kwargs):
         if "default" in self.query_dict:
             return self.query_dict["default"].create(*args, **kwargs)

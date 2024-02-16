@@ -1,4 +1,4 @@
 # SPDX-FileCopyrightText: 2023-present Xiang Wang <ramwin@qq.com>
 #
 # SPDX-License-Identifier: MIT
-__version__ = "0.8.1"
+__version__ = "0.9.0"

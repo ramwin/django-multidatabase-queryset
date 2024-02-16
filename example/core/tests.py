@@ -41,19 +41,22 @@ class Test(TestCase):
         data3.save(using="db_cold")
         data4 = UserAction(id=4, type="type2")
         data4.save(using="default")
+        data5 = UserAction(id=5, type="type1")
+        data5.save(using="default")
         order_qs = UserAction.objects.order_by(
             "type", "pk")
         data = list(order_qs)
         LOGGER.info(data)
         self.assertEqual(data[0].type, "type1")
-        self.assertEqual(data[1].type, "type2")
-        self.assertEqual(data[2].type, "type3")
-        self.assertEqual(data[3].type, "type4")
-        self.assertEqual(order_qs.count(), 4)
+        self.assertEqual(data[1].type, "type1")
+        self.assertEqual(data[2].type, "type2")
+        self.assertEqual(data[3].type, "type3")
+        self.assertEqual(order_qs.count(), 5)
         # breakpoint()
         exclude_qs = order_qs.exclude(id__gte=2)
         self.assertEqual(list(exclude_qs),
                          [data1])
+        self.assertEqual(order_qs.last(), data1)
 
     def test_order_again(self):
         """
